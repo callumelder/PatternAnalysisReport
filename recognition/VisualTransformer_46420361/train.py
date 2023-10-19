@@ -33,7 +33,9 @@ def train_model(model, root, learning_rate, weight_decay, epochs, device):
     optimizer = Adam(model.parameters(), lr=learning_rate)
     criterion = CrossEntropyLoss()
     model.train()
-    
+
+    training_losses = []
+
     for epoch in trange(epochs, desc="Training"):
         train_loss = 0.0
         for batch in tqdm(train_loader, desc=f"Epoch {epoch + 1} in training", leave=False):
@@ -48,9 +50,19 @@ def train_model(model, root, learning_rate, weight_decay, epochs, device):
             loss.backward()
             optimizer.step()
 
-    print(f"Epoch {epoch + 1}/{epochs} loss: {train_loss:.2f}")
+        training_losses.append(train_loss)
+
+        print(f"Epoch {epoch + 1}/{epochs} loss: {train_loss:.2f}")
+
+    # Plot the training loss
+    plt.plot(training_losses)
+    plt.title("Training Loss Over Epochs")
+    plt.xlabel("Epoch")
+    plt.ylabel("Loss")
+    plt.show()
         
     model.eval() # evaluation mode
+    
     # Test loop
     with torch.no_grad():
         correct, total = 0, 0
