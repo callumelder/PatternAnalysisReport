@@ -40,6 +40,28 @@ def plot_samples(train_dataset):
 
     # Display the plot
     plt.show()
+
+def plot_accuracies_and_losses(training_accuracies, training_losses, validation_accuracies, validation_losses, epochs):
+    plt.figure(figsize=(12, 4))
+    plt.subplot(1, 2, 1)
+    plt.plot(range(1, epochs + 1), training_losses, label='Training Loss', marker='o')
+    plt.plot(range(1, epochs + 1), training_accuracies, label='Training Accuracy', marker='o')
+    plt.xlabel('Epoch')
+    plt.ylabel('Loss / Accuracy')
+    plt.title('Training Loss and Accuracy')
+    plt.legend()
+
+    # Plot Validation Losses and Accuracies
+    plt.subplot(1, 2, 2)
+    plt.plot(range(1, epochs + 1), validation_losses, label='Validation Loss', marker='o')
+    plt.plot(range(1, epochs + 1), validation_accuracies, label='Validation Accuracy', marker='o')
+    plt.xlabel('Epoch')
+    plt.ylabel('Loss / Accuracy')
+    plt.title('Validation Loss and Accuracy')
+    plt.legend()
+
+    plt.tight_layout()
+    plt.show()
     
 def calc_std_and_mean(root, batch_size, train=True):
     if train:
@@ -67,4 +89,3 @@ def calc_std_and_mean(root, batch_size, train=True):
     
     print(mean)
     print(std)
-

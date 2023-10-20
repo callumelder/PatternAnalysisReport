@@ -1,6 +1,7 @@
 """The primary function where hyperparameters and variables can be tuned"""
 from train import *
 from modules import *
+from utils import *
 
 
 def main():
@@ -9,7 +10,7 @@ def main():
     root = '/home/callum/AD_NC/'
     
     # hyperparameters
-    epochs = 10
+    epochs = 20
     learning_rate = 0.001
     weight_decay = 0.0001
     
@@ -22,12 +23,14 @@ def main():
                          num_heads=num_heads,
                          device=device)
     
-    train_model(model=model,
+    training_accuracies, training_losses, validation_accuracies, validation_losses = train_model(model=model,
                 root=root,
                 learning_rate=learning_rate,
                 weight_decay=weight_decay,
                 epochs=epochs,
                 device=device)
+    
+    plot_accuracies_and_losses(training_accuracies, training_losses, validation_accuracies, validation_losses, epochs)
     
     save_model(model, model_name)
 

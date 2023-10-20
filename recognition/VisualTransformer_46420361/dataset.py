@@ -44,8 +44,6 @@ def split_train_data(root, validation_ratio=0.3):
 
     # Determine the number of patients for validation and test
     num_validation_patients = int(len(patient_ids) * validation_ratio)
-    print(f'Patient IDs: {len(patient_ids)}')
-    print(f'Validation Patients: {num_validation_patients}')
     train_patients = set(patient_ids[num_validation_patients:])
     validation_patients = set(patient_ids[:num_validation_patients]) 
     

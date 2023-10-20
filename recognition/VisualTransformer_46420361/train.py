@@ -30,18 +30,19 @@ def create_model(image_size, channels, patch_size, embedding_dims, num_heads, de
     return model
 
 def train_model(model, root, learning_rate, weight_decay, epochs, device):
-    train_dataloader, test_dataloader, validation_dataloader = load_dataloaders(root)
+    train_dataloader, _, validation_dataloader = load_dataloaders(root)
     optimizer = Adam(model.parameters(), lr=learning_rate, weight_decay=weight_decay)
     criterion = CrossEntropyLoss()
     model.train()
 
-    print(f'Train: {len(train_dataloader)}, Test: {len(test_dataloader)}, Val: {len(validation_dataloader)}')
-
     training_losses = []
+    training_accuracies = []
     clip_value = 1.0
 
     for epoch in trange(epochs, desc="Training"):
         train_loss = 0.0
+        correct = 0
+        total = 0
         for batch in tqdm(train_dataloader, desc=f"Epoch {epoch + 1} in training", leave=False):
             x, y = batch
             x, y = x.to(device), y.to(device)
@@ -55,20 +56,22 @@ def train_model(model, root, learning_rate, weight_decay, epochs, device):
             clip_grad_norm_(model.parameters(), clip_value)
             optimizer.step()
 
+            correct += torch.sum(torch.argmax(y_hat, dim=1) == y).detach().cpu().item()
+            total += len(x)
+
+        accuracy = correct / total
+        training_accuracies.append(accuracy)
+
         training_losses.append(train_loss)
 
-        print(f"Epoch {epoch + 1}/{epochs} loss: {train_loss:.2f}")
-
-    # Plot the training loss
-    plt.plot(training_losses)
-    plt.title("Training Loss Over Epochs")
-    plt.xlabel("Epoch")
-    plt.ylabel("Loss")
-    plt.show()
+        print(f"Epoch {epoch + 1}/{epochs} loss: {train_loss:.2f} Accuracy: {accuracy* 100:.2f}%")
         
     model.eval() # evaluation mode
+
+    validation_losses = []
+    validation_accuracies = []
     
-    # Test loop
+    # Validation loop
     with torch.no_grad():
         correct, total = 0, 0
         test_loss = 0.0
@@ -81,8 +84,16 @@ def train_model(model, root, learning_rate, weight_decay, epochs, device):
 
             correct += torch.sum(torch.argmax(y_hat, dim=1) == y).detach().cpu().item()
             total += len(x)
-        print(f"Test loss: {test_loss:.2f}")
-        print(f"Test accuracy: {correct / total * 100:.2f}%")
+
+        accuracy = correct / total
+        validation_accuracies.append(accuracy)
+
+        validation_losses.append(train_loss)
+
+        print(f"Validation loss: {test_loss:.2f}")
+        print(f"Validation accuracy: {correct / total * 100:.2f}%")
+
+    return training_accuracies, training_losses, validation_accuracies, validation_losses
     
 
 def predict(model, dataloader, num_samples=5):
