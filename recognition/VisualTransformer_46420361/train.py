@@ -30,23 +30,25 @@ def create_model(image_size, channels, patch_size, embedding_dims, num_heads, de
     return model
 
 def train_model(model, root, learning_rate, weight_decay, epochs, device):
-    train_loader, test_loader = load_dataloaders(root)
+    train_dataloader, test_dataloader, validation_dataloader = load_dataloaders(root)
     optimizer = Adam(model.parameters(), lr=learning_rate, weight_decay=weight_decay)
     criterion = CrossEntropyLoss()
     model.train()
+
+    print(f'Train: {len(train_dataloader)}, Test: {len(test_dataloader)}, Val: {len(validation_dataloader)}')
 
     training_losses = []
     clip_value = 1.0
 
     for epoch in trange(epochs, desc="Training"):
         train_loss = 0.0
-        for batch in tqdm(train_loader, desc=f"Epoch {epoch + 1} in training", leave=False):
+        for batch in tqdm(train_dataloader, desc=f"Epoch {epoch + 1} in training", leave=False):
             x, y = batch
             x, y = x.to(device), y.to(device)
             y_hat = model(x)
             loss = criterion(y_hat, y)
 
-            train_loss += loss.detach().cpu().item() / len(train_loader)
+            train_loss += loss.detach().cpu().item() / len(train_dataloader)
 
             optimizer.zero_grad()
             loss.backward()
@@ -70,12 +72,12 @@ def train_model(model, root, learning_rate, weight_decay, epochs, device):
     with torch.no_grad():
         correct, total = 0, 0
         test_loss = 0.0
-        for batch in tqdm(test_loader, desc="Testing"):
+        for batch in tqdm(validation_dataloader, desc="Testing"):
             x, y = batch
             x, y = x.to(device), y.to(device)
             y_hat = model(x)
             loss = criterion(y_hat, y)
-            test_loss += loss.detach().cpu().item() / len(test_loader)
+            test_loss += loss.detach().cpu().item() / len(validation_dataloader)
 
             correct += torch.sum(torch.argmax(y_hat, dim=1) == y).detach().cpu().item()
             total += len(x)

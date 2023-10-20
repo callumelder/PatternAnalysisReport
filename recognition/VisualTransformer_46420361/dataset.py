@@ -4,48 +4,14 @@ import torchvision.transforms as transforms
 from torch.utils.data import DataLoader
 import os
 import random
-import cv2
-import numpy as np
-from PIL import Image
 
 image_size = 256
 batch_size = 64
 crop_size = 192
 
-# class CropBrainScan:
-#     def __call__(self, image):
-#         # Convert the image to a NumPy array if it's not already
-#         if not isinstance(image, np.ndarray):
-#             image = np.array(image)
-
-#         # Ensure the image is in the CV_8UC1 format
-#         if image.ndim > 2:
-#             image = cv2.cvtColor(image, cv2.COLOR_BGR2GRAY)
-
-#         # Apply thresholding to separate the brain scan from the background
-#         _, thresholded = cv2.threshold(image, 1, 255, cv2.THRESH_BINARY)
-        
-#         # Find contours in the thresholded image
-#         contours, _ = cv2.findContours(thresholded, cv2.RETR_EXTERNAL, cv2.CHAIN_APPROX_SIMPLE)
-        
-#         # Find the largest contour (the brain scan region)
-#         largest_contour = max(contours, key=cv2.contourArea)
-        
-#         # Get the coordinates of the bounding box around the largest contour
-#         x, y, w, h = cv2.boundingRect(largest_contour)
-        
-#         # Crop the image to keep only the brain scan region
-#         cropped_image = image[y:y + h, x:x + w]
-
-#         # Convert the NumPy array back to a PIL image
-#         cropped_image = Image.fromarray(cropped_image)
-        
-#         return cropped_image
-
 
 def get_train_transform():
     transform = transforms.Compose([
-        # CropBrainScan(),
         transforms.CenterCrop((crop_size, crop_size)),
         transforms.Resize((image_size, image_size)),
         transforms.Grayscale(),
@@ -57,7 +23,6 @@ def get_train_transform():
 
 def get_test_transform():
     transform = transforms.Compose([
-        # CropBrainScan(),
         transforms.CenterCrop((crop_size, crop_size)),
         transforms.Resize((image_size, image_size)),
         transforms.Grayscale(),
@@ -67,52 +32,51 @@ def get_test_transform():
     return transform
 
 
-# def split_test_data(root, image_size, crop_size, test_val_ratio=0.5):
-#     test_dir = os.path.join(root, "test")
+def split_train_data(root, validation_ratio=0.3):
+    root = os.path.join(root, "train")
 
-#     # Load the test data without applying transforms
-#     test_data = ImageFolder(root=test_dir)
+    # Load the test data without applying transforms
+    dataset = ImageFolder(root=root)
 
-#     # Randomly select patient IDs for validation
-#     random.seed(42)
-#     patient_ids = list(set(os.path.basename(path).split('_')[0] for path, _ in test_data.samples))
+    # Randomly select patient IDs for validation
+    random.seed(42)
+    patient_ids = list(set(os.path.basename(path).split('_')[0] for path, _ in dataset.samples))
 
-#     # Determine the number of patients for validation and test
-#     num_patients = int(len(patient_ids) * test_val_ratio)
-#     test_patients = set(patient_ids[num_patients:])
-#     validation_patients = set(patient_ids[:num_patients]) 
+    # Determine the number of patients for validation and test
+    num_validation_patients = int(len(patient_ids) * validation_ratio)
+    print(f'Patient IDs: {len(patient_ids)}')
+    print(f'Validation Patients: {num_validation_patients}')
+    train_patients = set(patient_ids[num_validation_patients:])
+    validation_patients = set(patient_ids[:num_validation_patients]) 
     
-#     # Split test dataset based on patient IDs
-#     validation_samples = [(path, label) for path, label in test_data.samples if os.path.basename(path).split('_')[0] in validation_patients]
-#     test_samples = [(path, label) for path, label in test_data.samples if os.path.basename(path).split('_')[0] in test_patients]
+    # Split test dataset based on patient IDs
+    validation_samples = [(path, label) for path, label in dataset.samples if os.path.basename(path).split('_')[0] in validation_patients]
+    train_samples = [(path, label) for path, label in dataset.samples if os.path.basename(path).split('_')[0] in train_patients]
     
-#     train_transform = get_train_transform(image_size, crop_size)
-#     test_transform = get_test_transform(image_size, crop_size)
+    train_transform = get_train_transform()
 
-#     # Create validation and test datasets
-#     validation_dataset = ImageFolder(root=test_dir, transform=train_transform)
-#     test_dataset = ImageFolder(root=test_dir, transform=test_transform)
+    # Create validation and test datasets
+    validation_dataset = ImageFolder(root=root, transform=train_transform)
+    train_dataset = ImageFolder(root=root, transform=train_transform)
 
-#     # Overwrite samples
-#     validation_dataset.samples = validation_samples
-#     test_dataset.samples = test_samples
+    # Overwrite samples
+    validation_dataset.samples = validation_samples
+    train_dataset.samples = train_samples
 
-#     return validation_dataset, test_dataset
+    return train_dataset, validation_dataset
 
 
 def load_dataloaders(root):
-    # transform    
-    train_transform = get_train_transform()
+    # get transform
     test_transform = get_test_transform()
 
     # create datasets
-    train_dataset = ImageFolder(root + 'train', transform=train_transform)
     test_dataset = ImageFolder(root + 'test', transform=test_transform)
-    # validation_dataset, test_dataset = split_test_data(root, image_size, crop_size, batch_size, test_val_ratio=0.5)
+    train_dataset, validation_dataset = split_train_data(root, validation_ratio=0.3)
     
     # create dataloaders
     train_dataloader = DataLoader(dataset=train_dataset, batch_size=batch_size, shuffle=True, drop_last=True)
     test_dataloader = DataLoader(dataset=test_dataset, batch_size=batch_size, shuffle=False, drop_last=True)
-    # validation_dataloader = DataLoader(dataset=validation_dataset, batch_size=batch_size, shuffle=False, drop_last=True)
+    validation_dataloader = DataLoader(dataset=validation_dataset, batch_size=batch_size, shuffle=False, drop_last=True)
 
-    return train_dataloader, test_dataloader
+    return train_dataloader, test_dataloader, validation_dataloader
