@@ -28,7 +28,7 @@ This model attempts to classify Alzheimer's disease from the ADNI mri brain data
 
 More generally speaking, Vision Transformers have many use cases such as object detection, segmentation, image classification and action recognition.
 
-In comparison to convolutional neural networks (CNNs), Vision Transformers are able to outperform them when contextual understanding is crucial in the task at hand.
+In comparison to convolutional neural networks (CNNs), Vision Transformers are able to outperform them when contextual understanding is crucial in the task at hand and there are large amounts of training data.
 
 ## Preprocessing
 ### Normalization
@@ -44,18 +44,13 @@ To create patches of an even size, the input image must be square. Therefore, th
 Since the mri image is grey, pytorch must treat it as if it is such. To do so, the image must be grayscaled so pytorch knows it only has one channel.
 ## Results
 ### Data Splitting
-The current dataset is split into train and test with AD and NC subfolders. For the purposes of this investigation, a validation dataset is also needed. The base dataset has an approximate split of 70% training and 30% testing. Since training data is crucial for the models learning and success, the validation data will be will be taken from the test dataset, at a 1:1 ratio.
+The current dataset is split into train and test with AD and NC subfolders. For the purposes of this investigation, a validation dataset is also needed. The base dataset has an approximate split of 70% training and 30% testing. The test data set should not be touched as in a real life scenario we wouldn't have access to this. Therefore, we can split the training dataset, moving 30% of it to validation. The final split is then 50%, 30% and 20% for training, testing and validating respectively.
 
 ### Reproducing results
 Create environment using conda
 ```
 conda env create -n <environment_name> -f environment.yml
 ```
-Install OpenCV using pip
-```
-pip install opencv-python-headless
-```
-
 Run the main.py file with the same variables and hyperparameters:
 ```
 # data variables
@@ -72,7 +67,7 @@ num_heads = embedding_dims // 64
 num_classes = 2
 
 # hyperparameters
-epochs = 10
+epochs = 15
 learning_rate = 0.001
 weight_decay = 0.0001
 
@@ -86,6 +81,12 @@ python main.py
 ```
 
 ### Loss and Accuracy
+The loss and accuracy per epoch can be seen in the figure below. It should be noted that the accuracy was still increasing so more improvements could have been made by running more epochs. More epochs weren't run due to computation time.
+![Alt text](images/loss_and_accuracy.png)
+
+### Predictions
+Using the model, we can make predictions on the test data:
+![Alt text](images/predictions.png)
 
 ## Dependencies
 All the dependencies are stored within the `environment.yml` file, however these are the core dependencies and their respective versions
@@ -93,7 +94,6 @@ All the dependencies are stored within the `environment.yml` file, however these
 pytorch 2.0.1
 numpy 1.25.2
 matplotlib 3.7.2
-opencv-python-headless 4.8.1.78
 ```
 
 ## References
