@@ -3,14 +3,19 @@ from train import *
 from modules import *
 from utils import *
 
+import matplotlib
+matplotlib.use('tkagg')
+import matplotlib.pyplot as plt
+
 
 def main():
+    """main function for tuning and training model"""
     # data variables
     model_name = 'my_model.pth'
     root = '/home/callum/AD_NC/'
     
     # hyperparameters
-    epochs = 20
+    epochs = 10 
     learning_rate = 0.001
     weight_decay = 0.0001
     

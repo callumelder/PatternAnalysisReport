@@ -3,23 +3,36 @@ import torch
 from torch.optim import Adam
 from torch.nn import CrossEntropyLoss
 from tqdm import tqdm, trange
-
-import matplotlib
-matplotlib.use('tkagg')
-import matplotlib.pyplot as plt
-
 from dataset import load_dataloaders
 from modules import ViT
 from torch.nn.utils import clip_grad_norm_
 
 # device config
 def get_device():
+    """gets the device (GPU) used for training. Prints warning if using CPU.
+
+    Returns:
+        string: the device that will be used for training
+    """
     device = torch.device("cuda" if torch.cuda.is_available() else "cpu")
     if not torch.cuda.is_available():
         print("WARNING: CUDA not found, using CPU")
     return device
 
 def create_model(image_size, channels, patch_size, embedding_dims, num_heads, device):
+    """Creates the vision transformer model based on parameters
+
+    Args:
+        image_size (int): the size of the image to be resized to before training
+        channels (int): the number of channels in the image
+        patch_size (int): the size of the patches used for splitting the image
+        embedding_dims (int): the number of embedding dimensions
+        num_heads (int): the number of heads used for training
+        device (string): the device that will be used for training
+
+    Returns:
+        <class 'modules.ViT'>: the vision transformer model
+    """
     model = ViT(
     img_size=image_size,
     in_channels=channels,
@@ -30,16 +43,31 @@ def create_model(image_size, channels, patch_size, embedding_dims, num_heads, de
     return model
 
 def train_model(model, root, learning_rate, weight_decay, epochs, device):
+    """trains and evaluates the model
+
+    Args:
+        model (<class 'modules.ViT'>): the vision transformer model
+        root (string): the root of the dataset folder
+        learning_rate (int): the rate at which the model learns (steps through cost function)
+        weight_decay (int): the rate of decay of weights
+        epochs (int): the number of epochs used in training
+        device (string): the device used to train the model
+
+    Returns:
+        list: accuracies and losses for both training and evaluation
+    """
     train_dataloader, _, validation_dataloader = load_dataloaders(root)
     optimizer = Adam(model.parameters(), lr=learning_rate, weight_decay=weight_decay)
     criterion = CrossEntropyLoss()
-    model.train()
 
     training_losses = []
     training_accuracies = []
+    validation_losses = []
+    validation_accuracies = []
     clip_value = 1.0
 
     for epoch in trange(epochs, desc="Training"):
+        model.train()
         train_loss = 0.0
         correct = 0
         total = 0
@@ -66,56 +94,60 @@ def train_model(model, root, learning_rate, weight_decay, epochs, device):
 
         print(f"Epoch {epoch + 1}/{epochs} loss: {train_loss:.2f} Accuracy: {accuracy* 100:.2f}%")
         
-    model.eval() # evaluation mode
+        model.eval() # evaluation mode
+        
+        # Validation loop
+        with torch.no_grad():
+            correct, total = 0, 0
+            test_loss = 0.0
+            for batch in tqdm(validation_dataloader, desc="Testing"):
+                x, y = batch
+                x, y = x.to(device), y.to(device)
+                y_hat = model(x)
+                loss = criterion(y_hat, y)
+                test_loss += loss.detach().cpu().item() / len(validation_dataloader)
 
-    validation_losses = []
-    validation_accuracies = []
-    
-    # Validation loop
-    with torch.no_grad():
-        correct, total = 0, 0
-        test_loss = 0.0
-        for batch in tqdm(validation_dataloader, desc="Testing"):
-            x, y = batch
-            x, y = x.to(device), y.to(device)
-            y_hat = model(x)
-            loss = criterion(y_hat, y)
-            test_loss += loss.detach().cpu().item() / len(validation_dataloader)
+                correct += torch.sum(torch.argmax(y_hat, dim=1) == y).detach().cpu().item()
+                total += len(x)
 
-            correct += torch.sum(torch.argmax(y_hat, dim=1) == y).detach().cpu().item()
-            total += len(x)
+            accuracy = correct / total
+            validation_accuracies.append(accuracy)
 
-        accuracy = correct / total
-        validation_accuracies.append(accuracy)
+            validation_losses.append(train_loss)
 
-        validation_losses.append(train_loss)
-
-        print(f"Validation loss: {test_loss:.2f}")
-        print(f"Validation accuracy: {correct / total * 100:.2f}%")
+            print(f"Validation loss: {test_loss:.2f}")
+            print(f"Validation accuracy: {correct / total * 100:.2f}%")
 
     return training_accuracies, training_losses, validation_accuracies, validation_losses
     
 
-def predict(model, dataloader, num_samples=5):
-    # Set the model to evaluation mode
-    model.eval()
+def test(model, criterion, device, test_dataloader):
+    """tests model on test dataset
 
-    # randomly sample images 
-    samples = []
-    for _ in range(num_samples):
-        data, _ = next(iter(dataloader))  # You may need to adapt this based on your dataloader structure
-        samples.append(data)
-
-    # Make predictions
+    Args:
+        model (<class 'modules.ViT'>): the vision transformer model
+        criterion (nn.CrossEntropyLoss): the criterion be used in the model
+        device (string): the device being used by the model for testing
+        test_dataloader (torch.utils.data.DataLoader): the test dataloader
+    """
+    model.eval() # evaluation mode
+        
+    # Test loop
     with torch.no_grad():
-        predictions = model(torch.stack(samples))  # Assuming your model takes a batch as input
+        correct, total = 0, 0
+        test_loss = 0.0
+        for batch in tqdm(test_dataloader, desc="Testing"):
+            x, y = batch
+            x, y = x.to(device), y.to(device)
+            y_hat = model(x)
+            loss = criterion(y_hat, y)
+            test_loss += loss.detach().cpu().item() / len(test_dataloader)
 
-    # Plot the predictions
-    for i in range(num_samples):
-        plt.figure()
-        plt.imshow(samples[i][0].permute(1, 2, 0).cpu().numpy())  # Assuming your input is an image tensor
-        plt.title(f"Prediction: {predictions[i].argmax()}")
-        plt.show()
+            correct += torch.sum(torch.argmax(y_hat, dim=1) == y).detach().cpu().item()
+            total += len(x)
+
+        print(f"Test loss: {test_loss:.2f}")
+        print(f"Test accuracy: {correct / total * 100:.2f}%")
 
 def load_model(model_name):
     """loads saved model

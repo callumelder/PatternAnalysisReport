@@ -12,6 +12,7 @@ num_heads = embedding_dims // 64
 assert image_size % patch_size == 0, print('Image size not divisible by patch size')
 
 class PatchEmbeddingLayer(nn.Module):
+    """Takes an input image and splits it into patches to convert to a learnable embedding vector"""
     def __init__(self, in_channels, patch_size, embedding_dim,):
         super().__init__()
         self.patch_size = patch_size
@@ -28,6 +29,7 @@ class PatchEmbeddingLayer(nn.Module):
     
 
 class MultiHeadSelfAttentionBlock(nn.Module):
+  """Creates the multi-headed self attention block"""
   def __init__(self,
                embedding_dims = 256, # Hidden Size D in the ViT Paper Table 1
                num_heads = 12,  # Heads in the ViT Paper Table 1
@@ -54,6 +56,7 @@ class MultiHeadSelfAttentionBlock(nn.Module):
 
 
 class MachineLearningPerceptronBlock(nn.Module):
+  """Creates the fully connected perceptron layers"""
   def __init__(self, embedding_dims, mlp_size, mlp_dropout):
     super().__init__()
     self.embedding_dims = embedding_dims
@@ -74,6 +77,7 @@ class MachineLearningPerceptronBlock(nn.Module):
 
 
 class TransformerBlock(nn.Module):
+  """Creates the transformer block"""
   def __init__(self, embedding_dims = 256,
                mlp_dropout=0.1,
                attn_dropout=0.0,
@@ -99,6 +103,7 @@ class TransformerBlock(nn.Module):
 
 
 class ViT(nn.Module):
+  """Creates the vision transformer by combining blocks"""
   def __init__(self, img_size = 256,
                in_channels = 1,
                patch_size = 32,

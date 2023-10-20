@@ -11,6 +11,11 @@ crop_size = 192
 
 
 def get_train_transform():
+    """creates the transform used in preprocessing the training and validation data
+
+    Returns:
+        torchvision.transforms.functional: training and validation transformation
+    """
     transform = transforms.Compose([
         transforms.CenterCrop((crop_size, crop_size)),
         transforms.Resize((image_size, image_size)),
@@ -22,6 +27,11 @@ def get_train_transform():
 
 
 def get_test_transform():
+    """creates the transform used in preprocessing the testing data
+
+    Returns:
+        torchvision.transforms.functional: testing transformation
+    """
     transform = transforms.Compose([
         transforms.CenterCrop((crop_size, crop_size)),
         transforms.Resize((image_size, image_size)),
@@ -33,6 +43,15 @@ def get_test_transform():
 
 
 def split_train_data(root, validation_ratio=0.3):
+    """completes a patient level split on the training dataset, splitting into training and validation
+
+    Args:
+        root (string): the root of the dataset folder
+        validation_ratio (float, optional): the percentage of the training data being split into validation data. Defaults to 0.3.
+
+    Returns:
+        torch.utils.data.Datasets: the train and validation datasets
+    """
     root = os.path.join(root, "train")
 
     # Load the test data without applying transforms
@@ -65,6 +84,14 @@ def split_train_data(root, validation_ratio=0.3):
 
 
 def load_dataloaders(root):
+    """loads the dataloaders for each train, test and validation datasets
+
+    Args:
+        root (string): the root of the dataset folder
+
+    Returns:
+        torch.utils.data.DataLoader: the train, test and validation dataloaders
+    """
     # get transform
     test_transform = get_test_transform()
 
