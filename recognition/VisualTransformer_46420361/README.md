@@ -32,7 +32,7 @@ In comparison to convolutional neural networks (CNNs), Vision Transformers are a
 
 ## Preprocessing
 ### Normalization
-Finding the mean and standard deviation (std) of the images allows to model to be more effective when training. The mean and std were calculated as ____ and ____ respectively.
+Finding the mean and standard deviation (std) of the images allows to model to be more effective. The mean and std were calculated as 0.1155 and 0.2224 for training and 0.1167 and 0.2228 for testing, respectively.
 
 ### Cropping
 As most of the image of the brain scan is black, wasted space, cropping can be added to improve model training. A crop size of 192 was found to be the most effective.
@@ -51,10 +51,15 @@ Create environment using conda
 ```
 conda env create -n <environment_name> -f environment.yml
 ```
+Install OpenCV using pip
+```
+pip install opencv-python-headless
+```
+
 Run the main.py file with the same variables and hyperparameters:
 ```
 # data variables
-model_name = 'revert_to_crop.pth'
+model_name = 'my_model.pth'
 root = '/home/callum/AD_NC/'
 image_size = 256
 crop_size = 192
@@ -67,9 +72,17 @@ num_heads = embedding_dims // 64
 num_classes = 2
 
 # hyperparameters
-epochs = 5
+epochs = 10
 learning_rate = 0.001
-weight_decay = 0.00005
+weight_decay = 0.0001
+
+criterion = CrossEntropyLoss
+optimizer = Adam(model.parameters(), lr=learning_rate, weight_decay=weight_decay)
+```
+Run the main.py file
+```
+cd path/to/repo/recognition/VisualTransformer_46420361/
+python main.py
 ```
 
 ### Loss and Accuracy
@@ -90,6 +103,8 @@ https://www.akshaymakes.com/blogs/vision-transformer?fbclid=IwAR2Wmo7_nlLg2EILO6
 https://medium.com/mlearning-ai/vision-transformers-from-scratch-pytorch-a-step-by-step-guide-96c3313c2e0c
 
 https://medium.com/@faheemrustamy/vision-transformers-vs-convolutional-neural-networks-5fe8f9e18efc
+
+https://neptune.ai/blog/understanding-gradient-clipping-and-how-it-can-fix-exploding-gradients-problem
 
 ### Images
 https://www.google.com/url?sa=i&url=https%3A%2F%2Fwww.researchgate.net%2Ffigure%2FVision-Transformer-architecture-main-blocks-First-image-is-split-into-fixed-size_fig1_357885173&psig=AOvVaw3naQkwUnuyAVqHPmSygFE2&ust=1697694028496000&source=images&cd=vfe&opi=89978449&ved=0CA4QjRxqFwoTCKiBwKPx_oEDFQAAAAAdAAAAABAD
