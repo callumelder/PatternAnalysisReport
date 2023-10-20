@@ -10,6 +10,7 @@ import matplotlib.pyplot as plt
 
 from dataset import load_dataloaders
 from modules import ViT
+from torch.nn.utils import clip_grad_norm_
 
 # device config
 def get_device():
@@ -30,11 +31,12 @@ def create_model(image_size, channels, patch_size, embedding_dims, num_heads, de
 
 def train_model(model, root, learning_rate, weight_decay, epochs, device):
     train_loader, test_loader = load_dataloaders(root)
-    optimizer = Adam(model.parameters(), lr=learning_rate)
+    optimizer = Adam(model.parameters(), lr=learning_rate, weight_decay=weight_decay)
     criterion = CrossEntropyLoss()
     model.train()
 
     training_losses = []
+    clip_value = 1.0
 
     for epoch in trange(epochs, desc="Training"):
         train_loss = 0.0
@@ -48,6 +50,7 @@ def train_model(model, root, learning_rate, weight_decay, epochs, device):
 
             optimizer.zero_grad()
             loss.backward()
+            clip_grad_norm_(model.parameters(), clip_value)
             optimizer.step()
 
         training_losses.append(train_loss)

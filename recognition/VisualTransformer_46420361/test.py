@@ -9,9 +9,13 @@ from tqdm import tqdm, trange
 import numpy as np
 from PIL import Image
 
+import matplotlib
+matplotlib.use('tkagg')
+import matplotlib.pyplot as plt
+
 
 root = '/home/groups/comp3710/ADNI/AD_NC/'
-# root = '/home/callum/AD_NC/'
+root = '/home/callum/AD_NC/'
 image_size = 256
 batch_size = 64
 image_crop = 210
@@ -192,9 +196,12 @@ learning_rate = 0.001
 weight_decay = 0.0001
 
 # Training loop
-optimizer = Adam(model.parameters(), lr=learning_rate, weight_decay=weight_decay)
+optimizer = Adam(model.parameters(), lr=learning_rate)
 criterion = CrossEntropyLoss()
 model.train() # training mode
+
+training_losses = []
+
 for epoch in trange(epochs, desc="Training"):
     train_loss = 0.0
     for batch in tqdm(train_dataloader, desc=f"Epoch {epoch + 1} in training", leave=False):
@@ -209,7 +216,16 @@ for epoch in trange(epochs, desc="Training"):
         loss.backward()
         optimizer.step()
 
+    training_losses.append(train_loss)
+
     print(f"Epoch {epoch + 1}/{epochs} loss: {train_loss:.2f}")
+
+# Plot the training loss
+plt.plot(training_losses)
+plt.title("Training Loss Over Epochs")
+plt.xlabel("Epoch")
+plt.ylabel("Loss")
+plt.show()
 
 model.eval() # evaluation mode
 # Test loop
